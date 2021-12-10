@@ -32,15 +32,18 @@ typedef enum {
 } TransferHalf_t;
 
 typedef enum {
-    ADC1_ID = (uint32_t) ADC1,
-    ADC2_ID = (uint32_t) ADC2,
-    ADC3_ID = (uint32_t) ADC3,
-    ADC4_ID = (uint32_t) ADC4
+    ADC1_ID = 0,
+    ADC2_ID = 1,
+    ADC3_ID = 2,
+    ADC4_ID = 3,
+    ADC_ID_MAX
 } AdcId_t;
 
 // =============================================================================
 // Global Variables
 // =============================================================================
+
+ADC_HandleTypeDef *adcHandles[NUM_ADCS];
 
 // Circular buffers for DMA transfers from ADCs
 static volatile uint16_t adc1_buf[ADC1_BUF_LENGTH] = {0};
@@ -54,8 +57,10 @@ static volatile uint32_t storedFlags = 0;
 // =============================================================================
 // Private Function Prototypes
 // =============================================================================
-void ProcessReadings(TransferHalf_t half, volatile uint16_t *adc_buf,
-                     uint32_t result[MAX_NUM_ANALOG_CHANNELS], uint32_t num_analog_channels);
+static AdcId_t GetAdcId(ADC_HandleTypeDef *hadc);
+static void ProcessReadings(TransferHalf_t half, volatile uint16_t *adc_buf,
+                            uint32_t results[MAX_NUM_ANALOG_CHANNELS], uint32_t num_analog_channels);
+static void StoreResults(uint32_t results[], AdcId_t adcId);
 
 // =============================================================================
 // Public Function Definitions
@@ -64,6 +69,11 @@ void ProcessReadings(TransferHalf_t half, volatile uint16_t *adc_buf,
 void DataCollect_PrepareHardware(ADC_HandleTypeDef *hadc1, ADC_HandleTypeDef *hadc2,
                                  ADC_HandleTypeDef *hadc3, ADC_HandleTypeDef *hadc4)
 {
+    adcHandles[0] = hadc1;
+    adcHandles[1] = hadc2;
+    adcHandles[2] = hadc3;
+    adcHandles[3] = hadc4;
+
     if (HAL_ADC_Start_DMA(hadc1, (uint32_t *) adc1_buf, ADC1_BUF_LENGTH) != HAL_OK)
     {
         Error_Handler();
@@ -80,6 +90,8 @@ void DataCollect_PrepareHardware(ADC_HandleTypeDef *hadc1, ADC_HandleTypeDef *ha
     {
         Error_Handler();
     }
+
+    storedFlags = 0;
 }
 
 void DataCollect_Start(TIM_HandleTypeDef *triggerTimerHandle)
@@ -111,57 +123,58 @@ void DataCollect_Get(uint32_t buffer[DATA_COLLECT_TOTAL_NUM_ANALOG_CHANNELS])
 // Interrupt Callback Definitions
 // =============================================================================
 
+// Conversion half complete DMA interrupt callback
 void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef *hadc)
 {
-    uint32_t result[MAX_NUM_ANALOG_CHANNELS];
-    // Average 1st half of the buffer
-    switch ((uint32_t) hadc->Instance)
+    uint32_t results[MAX_NUM_ANALOG_CHANNELS];
+    AdcId_t adcId = GetAdcId(hadc);
+
+    switch (adcId)
     {
         case ADC1_ID:
-            ProcessReadings(FIRST_HALF, adc1_buf, result, ADC1_NUM_ANALOG_CHANNELS);
+            ProcessReadings(FIRST_HALF, adc1_buf, results, ADC1_NUM_ANALOG_CHANNELS);
             break;
         case ADC2_ID:
-            ProcessReadings(FIRST_HALF, adc2_buf, result, ADC2_NUM_ANALOG_CHANNELS);
+            ProcessReadings(FIRST_HALF, adc2_buf, results, ADC2_NUM_ANALOG_CHANNELS);
             break;
         case ADC3_ID:
-            ProcessReadings(FIRST_HALF, adc3_buf, result, ADC3_NUM_ANALOG_CHANNELS);
+            ProcessReadings(FIRST_HALF, adc3_buf, results, ADC3_NUM_ANALOG_CHANNELS);
             break;
         case ADC4_ID:
-            ProcessReadings(FIRST_HALF, adc4_buf, result, ADC4_NUM_ANALOG_CHANNELS);
+            ProcessReadings(FIRST_HALF, adc4_buf, results, ADC4_NUM_ANALOG_CHANNELS);
             break;
         default:
             Error_Handler();
-            break;
     }
 
-    // convertTemp(result[0]);
+    StoreResults(results, adcId);
 }
 
 // Conversion complete DMA interrupt callback
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
-    uint32_t result[MAX_NUM_ANALOG_CHANNELS];
-    // Average 2nd half of the buffer
-    switch ((uint32_t) hadc->Instance)
+    uint32_t results[MAX_NUM_ANALOG_CHANNELS];
+    AdcId_t adcId = GetAdcId(hadc);
+
+    switch (adcId)
     {
         case ADC1_ID:
-            ProcessReadings(SECOND_HALF, adc1_buf, result, ADC1_NUM_ANALOG_CHANNELS);
+            ProcessReadings(SECOND_HALF, adc1_buf, results, ADC1_NUM_ANALOG_CHANNELS);
             break;
         case ADC2_ID:
-            ProcessReadings(SECOND_HALF, adc2_buf, result, ADC2_NUM_ANALOG_CHANNELS);
+            ProcessReadings(SECOND_HALF, adc2_buf, results, ADC2_NUM_ANALOG_CHANNELS);
             break;
         case ADC3_ID:
-            ProcessReadings(SECOND_HALF, adc3_buf, result, ADC3_NUM_ANALOG_CHANNELS);
+            ProcessReadings(SECOND_HALF, adc3_buf, results, ADC3_NUM_ANALOG_CHANNELS);
             break;
         case ADC4_ID:
-            ProcessReadings(SECOND_HALF, adc4_buf, result, ADC4_NUM_ANALOG_CHANNELS);
+            ProcessReadings(SECOND_HALF, adc4_buf, results, ADC4_NUM_ANALOG_CHANNELS);
             break;
         default:
             Error_Handler();
-            break;
     }
 
-    // convertTemp(result[0]);
+    StoreResults(results, adcId);
 }
 
 void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc)
@@ -174,8 +187,22 @@ void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc)
 // Private Function Definitions
 // =============================================================================
 
-void ProcessReadings(TransferHalf_t half, volatile uint16_t *adc_buf,
-                     uint32_t result[MAX_NUM_ANALOG_CHANNELS], uint32_t num_analog_channels)
+static AdcId_t GetAdcId(ADC_HandleTypeDef *hadc)
+{
+    if (hadc == adcHandles[0])
+        return ADC1_ID;
+    if (hadc == adcHandles[1])
+        return ADC2_ID;
+    if (hadc == adcHandles[2])
+        return ADC3_ID;
+    if (hadc == adcHandles[3])
+        return ADC4_ID;
+
+    return ADC_ID_MAX;
+}
+
+static void ProcessReadings(TransferHalf_t half, volatile uint16_t *adc_buf,
+                            uint32_t results[MAX_NUM_ANALOG_CHANNELS], uint32_t num_analog_channels)
 {
     uint32_t sum[MAX_NUM_ANALOG_CHANNELS] = {0};
     uint32_t sample_num;
@@ -206,13 +233,13 @@ void ProcessReadings(TransferHalf_t half, volatile uint16_t *adc_buf,
     for (int channel = 0; channel < num_analog_channels; channel++)
     {
         // If average should be taken instead
-        // result[channel] = ((float)sum[channel]) / (BUF_LENGTH_PER_CHANNEL / 2);
+        // results[channel] = ((float)sum[channel]) / (BUF_LENGTH_PER_CHANNEL / 2);
 
-        result[channel] = sum[channel];
+        results[channel] = sum[channel];
     }
 }
 
-void StoreResults(uint32_t results[], AdcId_t adcId)
+static void StoreResults(uint32_t results[], AdcId_t adcId)
 {
     // Mapping of inputs to thermistor indices is defined here
     switch (adcId)

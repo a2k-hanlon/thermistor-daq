@@ -10,7 +10,7 @@ void DataCollect_PrepareHardware(ADC_HandleTypeDef *hadc1, ADC_HandleTypeDef *ha
                                  ADC_HandleTypeDef *hadc3, ADC_HandleTypeDef *hadc4);
 void DataCollect_Start(TIM_HandleTypeDef *triggerTimerHandle);
 void DataCollect_Stop(TIM_HandleTypeDef *triggerTimerHandle);
-int DataCollect_Poll(void);
+int  DataCollect_Poll(void);
 void DataCollect_Get(uint32_t buffer[DATA_COLLECT_TOTAL_NUM_ANALOG_CHANNELS]);
 
 #endif // __DATA_COLLECT_H
