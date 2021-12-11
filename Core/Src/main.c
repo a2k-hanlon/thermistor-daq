@@ -80,7 +80,7 @@ static void MX_ADC4_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
-
+void resetTerminal(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -127,6 +127,7 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
   DataCollect_PrepareHardware(&hadc1, &hadc2, &hadc3, &hadc4);
+  resetTerminal();
   DataCollect_Start(&htim3);
   /* USER CODE END 2 */
 
@@ -147,7 +148,7 @@ int main(void)
     {
       printf("%lu,", readings[i]);
     }
-    printf("%lu;\n", readings[DATA_COLLECT_TOTAL_NUM_ANALOG_CHANNELS - 1]);
+    printf("%lu;\r\n", readings[DATA_COLLECT_TOTAL_NUM_ANALOG_CHANNELS - 1]);
 
     while (HAL_GetTick() - last_reading_tick < 100);
     HAL_GPIO_WritePin(BOARD_LED_GPIO_Port, BOARD_LED_Pin, LED_OFF);
@@ -239,7 +240,7 @@ static void MX_ADC1_Init(void)
   hadc1.Init.ExternalTrigConv = ADC_EXTERNALTRIGCONV_T3_TRGO;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc1.Init.NbrOfConversion = 4;
-  hadc1.Init.DMAContinuousRequests = DISABLE;
+  hadc1.Init.DMAContinuousRequests = ENABLE;
   hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
   hadc1.Init.LowPowerAutoWait = DISABLE;
   hadc1.Init.Overrun = ADC_OVR_DATA_OVERWRITTEN;
@@ -325,7 +326,7 @@ static void MX_ADC2_Init(void)
   hadc2.Init.ExternalTrigConv = ADC_EXTERNALTRIGCONV_T3_TRGO;
   hadc2.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc2.Init.NbrOfConversion = 5;
-  hadc2.Init.DMAContinuousRequests = DISABLE;
+  hadc2.Init.DMAContinuousRequests = ENABLE;
   hadc2.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
   hadc2.Init.LowPowerAutoWait = DISABLE;
   hadc2.Init.Overrun = ADC_OVR_DATA_OVERWRITTEN;
@@ -413,7 +414,7 @@ static void MX_ADC3_Init(void)
   hadc3.Init.ExternalTrigConv = ADC_EXTERNALTRIGCONV_T3_TRGO;
   hadc3.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc3.Init.NbrOfConversion = 3;
-  hadc3.Init.DMAContinuousRequests = DISABLE;
+  hadc3.Init.DMAContinuousRequests = ENABLE;
   hadc3.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
   hadc3.Init.LowPowerAutoWait = DISABLE;
   hadc3.Init.Overrun = ADC_OVR_DATA_OVERWRITTEN;
@@ -491,7 +492,7 @@ static void MX_ADC4_Init(void)
   hadc4.Init.ExternalTrigConv = ADC_EXTERNALTRIGCONV_T3_TRGO;
   hadc4.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc4.Init.NbrOfConversion = 3;
-  hadc4.Init.DMAContinuousRequests = DISABLE;
+  hadc4.Init.DMAContinuousRequests = ENABLE;
   hadc4.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
   hadc4.Init.LowPowerAutoWait = DISABLE;
   hadc4.Init.Overrun = ADC_OVR_DATA_OVERWRITTEN;
@@ -667,7 +668,10 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+void resetTerminal(void)
+{
+    printf("\033[2J\033[H"); // clear screen and set cursor to home (0,0)
+}
 /* USER CODE END 4 */
 
 /**

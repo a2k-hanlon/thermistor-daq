@@ -111,12 +111,14 @@ int DataCollect_Poll(void)
 
 void DataCollect_Get(uint32_t buffer[DATA_COLLECT_TOTAL_NUM_ANALOG_CHANNELS])
 {
+    __disable_irq();
     for(int i = 0; i < DATA_COLLECT_TOTAL_NUM_ANALOG_CHANNELS; i++)
     {
         buffer[i] = storedResults[i];
     }
 
     storedFlags = 0;
+    __enable_irq();
 }
 
 // =============================================================================
