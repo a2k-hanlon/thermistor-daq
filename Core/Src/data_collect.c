@@ -1,7 +1,6 @@
 #include "data_collect.h"
 #include "main.h"
 #include <stdio.h>
-#include <stdlib.h>
 
 // =============================================================================
 // Private Defines and Type Definitions
@@ -9,22 +8,22 @@
 #define NUM_ADCS DATA_COLLECT_NUM_ADCS // Declared for convenience
 #define BUF_LENGTH_PER_CHANNEL 128
 
-#define ADC1_NUM_ANALOG_CHANNELS 4
+#define ADC1_NUM_ANALOG_CHANNELS 16
 #define ADC1_BUF_LENGTH (BUF_LENGTH_PER_CHANNEL * ADC1_NUM_ANALOG_CHANNELS)
-#define ADC2_NUM_ANALOG_CHANNELS 5
+#define ADC2_NUM_ANALOG_CHANNELS 0
 #define ADC2_BUF_LENGTH (BUF_LENGTH_PER_CHANNEL * ADC2_NUM_ANALOG_CHANNELS)
-#define ADC3_NUM_ANALOG_CHANNELS 3
+#define ADC3_NUM_ANALOG_CHANNELS 0
 #define ADC3_BUF_LENGTH (BUF_LENGTH_PER_CHANNEL * ADC3_NUM_ANALOG_CHANNELS)
-#define ADC4_NUM_ANALOG_CHANNELS 3
+#define ADC4_NUM_ANALOG_CHANNELS 0
 #define ADC4_BUF_LENGTH (BUF_LENGTH_PER_CHANNEL * ADC4_NUM_ANALOG_CHANNELS)
 
-#define MAX_NUM_ANALOG_CHANNELS 5
+#define MAX_NUM_ANALOG_CHANNELS 16
 
 #define ADC1_RESULTS_STORED 0x1
 #define ADC2_RESULTS_STORED 0x2
 #define ADC3_RESULTS_STORED 0x4
 #define ADC4_RESULTS_STORED 0x8
-#define ALL_RESULTS_STORED  0xf
+#define ALL_RESULTS_STORED  0x1
 
 typedef enum {
     FIRST_HALF = 0,
@@ -46,10 +45,10 @@ typedef enum {
 ADC_HandleTypeDef *adcHandles[NUM_ADCS];
 
 // Circular buffers for DMA transfers from ADCs
-static volatile uint16_t adc1_buf[ADC1_BUF_LENGTH] = {0};
-static volatile uint16_t adc2_buf[ADC2_BUF_LENGTH] = {0};
-static volatile uint16_t adc3_buf[ADC3_BUF_LENGTH] = {0};
-static volatile uint16_t adc4_buf[ADC4_BUF_LENGTH] = {0};
+static volatile uint16_t adc1_buf[ADC1_BUF_LENGTH];
+static volatile uint16_t adc2_buf[ADC2_BUF_LENGTH];
+static volatile uint16_t adc3_buf[ADC3_BUF_LENGTH];
+static volatile uint16_t adc4_buf[ADC4_BUF_LENGTH];
 
 static volatile uint32_t storedResults[DATA_COLLECT_TOTAL_NUM_ANALOG_CHANNELS] = {0};
 static volatile uint32_t storedFlags = 0;
@@ -78,18 +77,18 @@ void DataCollect_PrepareHardware(ADC_HandleTypeDef *hadc1, ADC_HandleTypeDef *ha
     {
         Error_Handler();
     }
-    if (HAL_ADC_Start_DMA(hadc2, (uint32_t *) adc2_buf, ADC2_BUF_LENGTH) != HAL_OK)
-    {
-        Error_Handler();
-    }
-    if (HAL_ADC_Start_DMA(hadc3, (uint32_t *) adc3_buf, ADC3_BUF_LENGTH) != HAL_OK)
-    {
-        Error_Handler();
-    }
-    if (HAL_ADC_Start_DMA(hadc4, (uint32_t *) adc4_buf, ADC4_BUF_LENGTH) != HAL_OK)
-    {
-        Error_Handler();
-    }
+    // if (HAL_ADC_Start_DMA(hadc2, (uint32_t *) adc2_buf, ADC2_BUF_LENGTH) != HAL_OK)
+    // {
+    //     Error_Handler();
+    // }
+    // if (HAL_ADC_Start_DMA(hadc3, (uint32_t *) adc3_buf, ADC3_BUF_LENGTH) != HAL_OK)
+    // {
+    //     Error_Handler();
+    // }
+    // if (HAL_ADC_Start_DMA(hadc4, (uint32_t *) adc4_buf, ADC4_BUF_LENGTH) != HAL_OK)
+    // {
+    //     Error_Handler();
+    // }
 
     storedFlags = 0;
 }
@@ -251,27 +250,39 @@ static void StoreResults(uint32_t results[], AdcId_t adcId)
             storedResults[1] = results[1];
             storedResults[2] = results[2];
             storedResults[3] = results[3];
+            storedResults[4] = results[4];
+            storedResults[5] = results[5];
+            storedResults[6] = results[6];
+            storedResults[7] = results[7];
+            storedResults[8] = results[8];
+            storedResults[9] = results[9];
+            storedResults[10] = results[10];
+            storedResults[11] = results[11];
+            storedResults[12] = results[12];
+            storedResults[13] = results[13];
+            storedResults[14] = results[14];
+            storedResults[15] = results[15];
             storedFlags |= ADC1_RESULTS_STORED;
             break;
         case ADC2_ID:
-            storedResults[4] = results[0];
-            storedResults[5] = results[1];
-            storedResults[6] = results[2];
-            storedResults[7] = results[3];
-            storedResults[8] = results[4];
-            storedFlags |= ADC2_RESULTS_STORED;
+        //     storedResults[4] = results[0];
+        //     storedResults[5] = results[1];
+        //     storedResults[6] = results[2];
+        //     storedResults[7] = results[3];
+        //     storedResults[8] = results[4];
+        //     storedFlags |= ADC2_RESULTS_STORED;
             break;
         case ADC3_ID:
-            storedResults[9] = results[0];
-            storedResults[10] = results[1];
-            storedResults[11] = results[2];
-            storedFlags |= ADC3_RESULTS_STORED;
+        //     storedResults[9] = results[0];
+        //     storedResults[10] = results[1];
+        //     storedResults[11] = results[2];
+        //     storedFlags |= ADC3_RESULTS_STORED;
             break;
         case ADC4_ID:
-            storedResults[12] = results[0];
-            storedResults[13] = results[1];
-            storedResults[14] = results[2];
-            storedFlags |= ADC4_RESULTS_STORED;
+        //     storedResults[12] = results[0];
+        //     storedResults[13] = results[1];
+        //     storedResults[14] = results[2];
+        //     storedFlags |= ADC4_RESULTS_STORED;
             break;
         default:
             Error_Handler();

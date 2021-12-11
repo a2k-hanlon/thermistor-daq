@@ -9,7 +9,7 @@
 
 # CubeMX extras
 Makefile
-startup_stm32f303xc.s
-STM32F303CCTx_FLASH.ld
+startup_stm32*.s
+STM32F*_FLASH.ld
 .mxproject
 Drivers

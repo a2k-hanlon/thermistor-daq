@@ -1,10 +1,10 @@
 #ifndef __DATA_COLLECT_H
 #define __DATA_COLLECT_H
 
-#include "stm32f3xx_hal.h"
+#include "stm32f1xx_hal.h"
 
 #define DATA_COLLECT_NUM_ADCS 4
-#define DATA_COLLECT_TOTAL_NUM_ANALOG_CHANNELS 15
+#define DATA_COLLECT_TOTAL_NUM_ANALOG_CHANNELS 16
 
 void DataCollect_PrepareHardware(ADC_HandleTypeDef *hadc1, ADC_HandleTypeDef *hadc2,
                                  ADC_HandleTypeDef *hadc3, ADC_HandleTypeDef *hadc4);
